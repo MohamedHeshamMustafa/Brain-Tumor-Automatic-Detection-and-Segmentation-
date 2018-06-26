@@ -16,6 +16,7 @@ import nibabel
 import numpy as np
 from scipy import ndimage
 from util.data_process import *
+import tensorlayer as tl
 
 class DataLoader():
     def __init__(self, config):
@@ -40,23 +41,23 @@ class DataLoader():
 
         if(self.label_convert_source and self.label_convert_target):
             assert(len(self.label_convert_source) == len(self.label_convert_target))
-            
+
     def __get_patient_names(self):
-        """
-        get the list of patient names, if self.data_names id not None, then load patient 
-        names from that file, otherwise search all the names automatically in data_root
-        """
-        # use pre-defined patient names
-        if(self.data_names is not None):
-            assert(os.path.isfile(self.data_names))
-            with open(self.data_names) as f:
-                content = f.readlines()
-            patient_names = [x.strip() for x in content]
-        # use all the patient names in data_root
-        else:
-            patient_names = os.listdir(self.data_root[0])
-            patient_names = [name for name in patient_names if 'brats' in name.lower()]
-        return patient_names
+		"""
+		get the list of patient names, if self.data_names id not None, then load patient 
+		names from that file, otherwise search all the names automatically in data_root
+		"""
+		# use pre-defined patient names
+		if(self.data_names is not None):
+			assert(tl.files.file_exists(self.data_names))
+			content = tl.files.read_file(self.data_names)
+			content = content.splitlines()
+			patient_names = [x.strip() for x in content]
+		# use all the patient names in data_root
+		else:
+			patient_names = tl.files.load_folder_list(self.data_root[0])
+			patient_names = [name.split('/')[-1] for name in patient_names if 'brats' in name.lower()]
+		return patient_names
 
     def __load_one_volume(self, patient_name, mod):
         patient_dir = os.path.join(self.data_root[0], patient_name)
