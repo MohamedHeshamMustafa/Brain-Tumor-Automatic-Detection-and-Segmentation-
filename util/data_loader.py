@@ -16,6 +16,7 @@ import nibabel
 import numpy as np
 from scipy import ndimage
 from util.data_process import *
+import time
 
 class DataLoader():
     def __init__(self, config):
@@ -94,6 +95,7 @@ class DataLoader():
         bbox  = []
         in_size = []
         data_num = self.data_num if (self.data_num is not None) else len(self.patient_names)
+        start = time.time()
         for i in range(data_num):
             volume_list = []
             volume_name_list = []
@@ -125,6 +127,9 @@ class DataLoader():
                 Y.append(label)
             if((i+1)%50 == 0 or (i+1) == data_num):
                 print('Data load, {0:}% finished'.format((i+1)*100.0/data_num))
+        end = time.time()
+        print('Elapsed loading time')
+        print(end-start)
         self.image_names = ImageNames
         self.data   = X
         self.weight = W

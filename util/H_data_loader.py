@@ -17,6 +17,8 @@ import numpy as np
 from scipy import ndimage
 from util.data_process import *
 import tensorlayer as tl
+import tensorflow as tf
+import time
 
 class DataLoader():
     def __init__(self, config):
@@ -63,7 +65,7 @@ class DataLoader():
         patient_dir = os.path.join(self.data_root[0], patient_name)
         # for bats17
         if('nii' in self.file_postfix):
-            image_names = os.listdir(patient_dir)
+            image_names = tf.gfile.ListDirectory(patient_dir)
             volume_name = None
             for image_name in image_names:
                 if(mod + '.' in image_name):
@@ -95,6 +97,7 @@ class DataLoader():
         bbox  = []
         in_size = []
         data_num = self.data_num if (self.data_num is not None) else len(self.patient_names)
+        start = time.time()
         for i in range(data_num):
             volume_list = []
             volume_name_list = []
@@ -126,13 +129,16 @@ class DataLoader():
                 Y.append(label)
             if((i+1)%50 == 0 or (i+1) == data_num):
                 print('Data load, {0:}% finished'.format((i+1)*100.0/data_num))
+        end = time.time()
+        print('Elapsed loading time')
+        print(end-start)
         self.image_names = ImageNames
         self.data   = X
         self.weight = W
         self.label  = Y
         self.bbox   = bbox
         self.in_size= in_size
-    
+        
     def get_subimage_batch(self):
         """
         sample a batch of image patches for segmentation. Only used for training
