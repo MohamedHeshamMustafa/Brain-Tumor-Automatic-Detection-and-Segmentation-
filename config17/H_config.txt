@@ -2,6 +2,7 @@
 data_root         = /home/mhesham/Desktop/College-projects/H_GP/B17_Training
 save_folder       = result17
 data_names        = config17/H_test_names.txt
+data_num      	  = 20
 modality_postfix  = [flair, t1, t1ce, t2]
 file_postfix      = nii.gz
 

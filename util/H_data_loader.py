@@ -15,7 +15,7 @@ import random
 import nibabel
 import numpy as np
 from scipy import ndimage
-from util.data_process import *
+from util.H_data_process import *
 import tensorlayer as tl
 import tensorflow as tf
 import time
@@ -72,6 +72,7 @@ class DataLoader():
                     volume_name = image_name
                     break
         # for brats15
+        #TODO
         else:
             img_file_dirs = os.listdir(patient_dir)
             volume_name  = None
@@ -109,6 +110,7 @@ class DataLoader():
                     volume_size  = volume.shape
                 volume = crop_ND_volume_with_bounding_box(volume, bbmin, bbmax)
                 if(self.data_resize):
+                    #TODO
                     volume = resize_3D_volume_to_given_shape(volume, self.data_resize, 1)
                 if(mod_idx ==0):
                     weight = np.asarray(volume > 0, np.float32)

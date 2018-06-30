@@ -117,6 +117,7 @@ def get_ND_bounding_box(label, margin):
         idx_max[i] = min(idx_max[i] + margin[i], input_shape[i] - 1)
     return idx_min, idx_max
 
+
 def crop_ND_volume_with_bounding_box(volume, min_idx, max_idx):
     """
     crop/extract a subregion form an nd image.

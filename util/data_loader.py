@@ -136,6 +136,8 @@ class DataLoader():
         self.label  = Y
         self.bbox   = bbox
         self.in_size= in_size
+        print('first loaded image')
+        print(ImageNames[0][0])
     
     def get_subimage_batch(self):
         """

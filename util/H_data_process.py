@@ -91,7 +91,7 @@ def itensity_normalize_one_volume(volume):
     
     pixels = volume[volume > 0]
     mean = pixels.mean()
-    std  = pixels.std()
+    std  = pixels.std() 
     out = (volume - mean)/std
     out_random = np.random.normal(0, 1, size = volume.shape)
     out[volume == 0] = out_random[volume == 0]
