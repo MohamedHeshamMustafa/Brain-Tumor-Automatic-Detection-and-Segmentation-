@@ -91,7 +91,7 @@ def itensity_normalize_one_volume(volume):
     
     pixels = volume[volume > 0]
     mean = pixels.mean()
-    std  = pixels.std()
+    std  = pixels.std() 
     out = (volume - mean)/std
     out_random = np.random.normal(0, 1, size = volume.shape)
     out[volume == 0] = out_random[volume == 0]
@@ -116,7 +116,6 @@ def get_ND_bounding_box(label, margin):
         idx_min[i] = max(idx_min[i] - margin[i], 0)
         idx_max[i] = min(idx_max[i] + margin[i], input_shape[i] - 1)
     return idx_min, idx_max
-
 
 def crop_ND_volume_with_bounding_box(volume, min_idx, max_idx):
     """
