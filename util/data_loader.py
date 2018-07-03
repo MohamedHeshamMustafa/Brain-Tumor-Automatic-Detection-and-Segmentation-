@@ -16,8 +16,6 @@ import nibabel
 import numpy as np
 from scipy import ndimage
 from util.data_process import *
-import tensorlayer as tl
-import tensorflow as tf
 
 class DataLoader():
     def __init__(self, config):
@@ -42,29 +40,30 @@ class DataLoader():
 
         if(self.label_convert_source and self.label_convert_target):
             assert(len(self.label_convert_source) == len(self.label_convert_target))
-
+            
     def __get_patient_names(self):
-		"""
-		get the list of patient names, if self.data_names id not None, then load patient 
-		names from that file, otherwise search all the names automatically in data_root
-		"""
-		# use pre-defined patient names
-		if(self.data_names is not None):
-			assert(tl.files.file_exists(self.data_names))
-			content = tl.files.read_file(self.data_names)
-			content = content.splitlines()
-			patient_names = [x.strip() for x in content]
-		# use all the patient names in data_root
-		else:
-			patient_names = tl.files.load_folder_list(self.data_root[0])
-			patient_names = [name.split('/')[-1] for name in patient_names if 'brats' in name.lower()]
-		return patient_names
+        """
+        get the list of patient names, if self.data_names id not None, then load patient 
+        names from that file, otherwise search all the names automatically in data_root
+        """
+        # use pre-defined patient names
+        if(self.data_names is not None):
+            assert(os.path.isfile(self.data_names))
+            with open(self.data_names) as f:
+                content = f.readlines()
+            patient_names = [x.strip() for x in content]
+        # use all the patient names in data_root
+        else:
+            patient_names = os.listdir(self.data_root[0])
+            patient_names = [name for name in patient_names if 'brats' in name.lower()]
+        return patient_names
 
     def __load_one_volume(self, patient_name, mod):
-        patient_dir = os.path.join(self.data_root[0], patient_name)
+        #patient_dir = os.path.join(self.data_root[0], patient_name)
+        patient_dir = r"D:\Ghadeer\Desktop\brats17-master\Brats17_CBICA_ATX_1"
         # for bats17
         if('nii' in self.file_postfix):
-            image_names = tf.gfile.ListDirectory(patient_dir)
+            image_names = os.listdir(patient_dir)
             volume_name = None
             for image_name in image_names:
                 if(mod + '.' in image_name):
@@ -81,15 +80,26 @@ class DataLoader():
         assert(volume_name is not None)
         volume_name = os.path.join(patient_dir, volume_name)
         volume = load_3d_volume_as_array(volume_name)
-        return volume, volume_name
+        print ("volume",volume.shape)
+        return volume
 
+###################################### G_EXPeriment ######################################################
+    def g_load(self):
+        volume_list =[]
+        for mod_id in range(len(self.modality_postfix)):
+            volume = self.__load_one_volume(self.patient_names[0], self.modality_postfix[mod_id])
+            volume_list.append(volume)
+        vol = np.asarray(volume_list)
+        labels = self.__load_one_volume(self.patient_names[0], self.label_postfix)
+        return vol,labels
+
+##########################################################################################################
     def load_data(self):
         """
         load all the training/testing data
         """
         self.patient_names = self.__get_patient_names()
         assert(len(self.patient_names)  > 0)
-        ImageNames = []
         X = []
         W = []
         Y = []
@@ -98,9 +108,8 @@ class DataLoader():
         data_num = self.data_num if (self.data_num is not None) else len(self.patient_names)
         for i in range(data_num):
             volume_list = []
-            volume_name_list = []
             for mod_idx in range(len(self.modality_postfix)):
-                volume, volume_name = self.__load_one_volume(self.patient_names[i], self.modality_postfix[mod_idx])
+                volume = self.__load_one_volume(self.patient_names[i], self.modality_postfix[mod_idx])
                 if(mod_idx == 0):
                     margin = 5
                     bbmin, bbmax = get_ND_bounding_box(volume, margin)
@@ -113,27 +122,24 @@ class DataLoader():
                 if(self.intensity_normalize[mod_idx]):
                     volume = itensity_normalize_one_volume(volume)
                 volume_list.append(volume)
-                volume_name_list.append(volume_name)
-            ImageNames.append(volume_name_list)
             X.append(volume_list)
             W.append(weight)
             bbox.append([bbmin, bbmax])
             in_size.append(volume_size)
             if(self.with_ground_truth):
-                label, _ = self.__load_one_volume(self.patient_names[i], self.label_postfix)
+                label = self.__load_one_volume(self.patient_names[i], self.label_postfix)
                 label = crop_ND_volume_with_bounding_box(label, bbmin, bbmax)
                 if(self.data_resize):
                     label = resize_3D_volume_to_given_shape(label, self.data_resize, 0)
                 Y.append(label)
             if((i+1)%50 == 0 or (i+1) == data_num):
                 print('Data load, {0:}% finished'.format((i+1)*100.0/data_num))
-        self.image_names = ImageNames
         self.data   = X
         self.weight = W
         self.label  = Y
         self.bbox   = bbox
         self.in_size= in_size
-        
+    
     def get_subimage_batch(self):
         """
         sample a batch of image patches for segmentation. Only used for training
@@ -180,6 +186,9 @@ class DataLoader():
                 flip = False
             self.patient_id = random.randint(0, len(self.data)-1)
             data_volumes = [x for x in self.data[self.patient_id]]
+
+            print(data_volumes[0].shape)
+
             weight_volumes = [self.weight[self.patient_id]]
             boundingbox = None
             if(self.with_ground_truth):
@@ -218,7 +227,8 @@ class DataLoader():
             transposed_volumes = transpose_volumes(data_volumes, slice_direction)
             volume_shape = transposed_volumes[0].shape
             sub_data_shape = [data_slice_number, data_shape[1], data_shape[2]]
-            sub_label_shape =[label_slice_number, label_shape[1], label_shape[2]]
+            #sub_label_shape =[label_slice_number, label_shape[1], label_shape[2]]
+            sub_label_shape = [label_shape[1], label_shape[2], label_shape[3]]
             center_point = get_random_roi_sampling_center(volume_shape, sub_label_shape, batch_sample_model, boundingbox)
             sub_data = []
             for moda in range(len(transposed_volumes)):
@@ -226,8 +236,10 @@ class DataLoader():
                 if(flip):
                     sub_data_moda = np.flip(sub_data_moda, -1)
                 if(down_sample_rate != 1.0):
-                    sub_data_moda = ndimage.interpolation.zoom(sub_data_moda, 1.0/down_sample_rate, order = 1)   
+                    sub_data_moda = ndimage.interpolation.zoom(sub_data_moda, 1.0/down_sample_rate, order = 1)
+
                 sub_data.append(sub_data_moda)
+
             sub_data = np.asarray(sub_data)
             data_batch.append(sub_data)
             transposed_weight = transpose_volumes(weight_volumes, slice_direction)
@@ -250,16 +262,25 @@ class DataLoader():
                 if(flip):
                     sub_label = np.flip(sub_label, -1)
                 if(down_sample_rate != 1.0):
-                    sub_label = ndimage.interpolation.zoom(sub_label, 1.0/down_sample_rate, order = 0)  
+                    sub_label = ndimage.interpolation.zoom(sub_label, 1.0/down_sample_rate, order = 0)
+
                 label_batch.append([sub_label])
-                    
+
+
         data_batch = np.asarray(data_batch, np.float32)
         weight_batch = np.asarray(weight_batch, np.float32)
         label_batch = np.asarray(label_batch, np.int64)
+
+        #sub_data_moda=np.asarray(sub_data_moda,np.float32)
+        #sub_label = np.asarray(sub_label,np.int64)
         batch = {}
         batch['images']  = np.transpose(data_batch,   [0, 2, 3, 4, 1])
         batch['weights'] = np.transpose(weight_batch, [0, 2, 3, 4, 1])
         batch['labels']  = np.transpose(label_batch,  [0, 2, 3, 4, 1])
+
+       #batch['images']=np.transpose(sub_data_moda,[1,0,2])
+        #batch['labels']=np.transpose(sub_label,[0,1,2])
+
         
         return batch
     
@@ -273,4 +294,7 @@ class DataLoader():
         """
         Used for testing, get one image data and patient name
         """
-        return [self.data[i], self.weight[i], self.patient_names[i], self.image_names[i], self.bbox[i], self.in_size[i]]
+        return [self.data[i], self.weight[i], self.patient_names[i], self.bbox[i], self.in_size[i]]
+
+    def get_data_n_weight(self):
+        return (self.data, self.weight)

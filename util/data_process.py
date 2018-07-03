@@ -46,39 +46,31 @@ def load_mha_volume_as_array(filename):
     nda = sitk.GetArrayFromImage(img)
     return nda
 
-def load_nifty_volume_as_array(filename, with_header = False):
+def load_nifty_volume_as_array(filename):
     """
     load nifty image into numpy array, and transpose it based on the [z,y,x] axis order
     The output array shape is like [Depth, Height, Width]
     inputs:
         filename: the input file name, should be *.nii or *.nii.gz
-        with_header: return affine and hearder infomation
     outputs:
         data: a numpy data array
     """
     img = nibabel.load(filename)
     data = img.get_data()
     data = np.transpose(data, [2,1,0])
-    if(with_header):
-        return data, img.affine, img.header
-    else:
-        return data
+    return data
 
-def save_array_as_nifty_volume(data, filename, reference_name = None):
+def save_array_as_nifty_volume(data, filename):
     """
     save a numpy array as nifty image
     inputs:
         data: a numpy array with shape [Depth, Height, Width]
         filename: the ouput file name
-        reference_name: file name of the reference image of which affine and header are used
     outputs: None
     """
-    img = sitk.GetImageFromArray(data)
-    if(reference_name is not None):
-        img_ref = sitk.ReadImage(reference_name)
-        img.CopyInformation(img_ref)
-    sitk.WriteImage(img, filename)
-
+    data = np.transpose(data, [2, 1, 0])
+    img = nibabel.Nifti1Image(data, np.eye(4))
+    nibabel.save(img, filename)
 
 def itensity_normalize_one_volume(volume):
     """
@@ -91,7 +83,7 @@ def itensity_normalize_one_volume(volume):
     
     pixels = volume[volume > 0]
     mean = pixels.mean()
-    std  = pixels.std() 
+    std  = pixels.std()
     out = (volume - mean)/std
     out_random = np.random.normal(0, 1, size = volume.shape)
     out[volume == 0] = out_random[volume == 0]

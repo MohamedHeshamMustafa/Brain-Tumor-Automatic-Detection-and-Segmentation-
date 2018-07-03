@@ -120,7 +120,8 @@ def volume_probability_prediction_dynamic_shape(temp_imgs, data_shape, label_sha
     x = tf.placeholder(tf.float32, full_data_shape)
     predicty = net(x, is_training = True)
     proby = tf.nn.softmax(predicty)
-    
+    print("DEBUG: x.get_shape() = {}".format(x.get_shape()))
+    print("DEBUG: predicty.get_shape() = {}".format(predicty.get_shape()))
     new_data_shape = [data_slice, Hx, Wx]
     new_label_shape = [label_slice, Hx, Wx]
     temp_prob = volume_probability_prediction(temp_imgs, new_data_shape, new_label_shape, data_channel, 
