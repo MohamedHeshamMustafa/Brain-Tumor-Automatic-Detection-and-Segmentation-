@@ -1,0 +1,10 @@
+[data]
+data_root             = /home/mhesham/Desktop/College-projects/H_GP/Testing
+modality_postfix      = [flair, t1, t1ce, t2]
+aug_mode              = True
+aug_modes             = [flip1_mode, flip2_mode, rotation_mode, shift_mode, shear_mode, zoom_mode, elastic_mode]
+aug_save_path         = /home/mhesham/Desktop/College-projects/H_GP/Augmented_data_result
+label_postfix         = seg
+file_postfix          = nii.gz
+with_ground_truth     = True
+

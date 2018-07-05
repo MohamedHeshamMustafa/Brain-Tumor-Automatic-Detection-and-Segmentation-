@@ -39,6 +39,7 @@ class DataLoader():
         self.data_num      = config.get('data_num', None)
         self.data_resize   = config.get('data_resize', None)
         self.with_flip     = config.get('with_flip', False)
+        self.aug_mode     = config.get('aug_mode', False)
 
         if(self.label_convert_source and self.label_convert_target):
             assert(len(self.label_convert_source) == len(self.label_convert_target))
@@ -102,15 +103,18 @@ class DataLoader():
             for mod_idx in range(len(self.modality_postfix)):
                 volume, volume_name = self.__load_one_volume(self.patient_names[i], self.modality_postfix[mod_idx])
                 if(mod_idx == 0):
-                    margin = 5
+                    if(self.aug_mode):
+                        margin = max(volume.shape)
+                    else:
+                        margin = 5
                     bbmin, bbmax = get_ND_bounding_box(volume, margin)
                     volume_size  = volume.shape
                 volume = crop_ND_volume_with_bounding_box(volume, bbmin, bbmax)
-                if(self.data_resize):
+                if(self.data_resize and not self.aug_mode):
                     volume = resize_3D_volume_to_given_shape(volume, self.data_resize, 1)
                 if(mod_idx ==0):
                     weight = np.asarray(volume > 0, np.float32)
-                if(self.intensity_normalize[mod_idx]):
+                if(self.intensity_normalize[mod_idx] and not self.aug_mode):
                     volume = itensity_normalize_one_volume(volume)
                 volume_list.append(volume)
                 volume_name_list.append(volume_name)
@@ -122,7 +126,7 @@ class DataLoader():
             if(self.with_ground_truth):
                 label, _ = self.__load_one_volume(self.patient_names[i], self.label_postfix)
                 label = crop_ND_volume_with_bounding_box(label, bbmin, bbmax)
-                if(self.data_resize):
+                if(self.data_resize and not self.aug_mode):
                     label = resize_3D_volume_to_given_shape(label, self.data_resize, 0)
                 Y.append(label)
             if((i+1)%50 == 0 or (i+1) == data_num):
@@ -274,3 +278,9 @@ class DataLoader():
         Used for testing, get one image data and patient name
         """
         return [self.data[i], self.weight[i], self.patient_names[i], self.image_names[i], self.bbox[i], self.in_size[i]]
+
+    def get_image_data_label_with_name(self, i):
+        """
+        Used for testing, get one image data and patient name
+        """
+        return [self.data[i], self.label[i], self.weight[i], self.patient_names[i], self.bbox[i], self.in_size[i]]

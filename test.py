@@ -443,15 +443,14 @@ def test(config_file):
         final_label = np.zeros(temp_size, np.int16)
         final_label = set_ND_volume_roi_with_bounding_box_range(final_label, temp_bbox[0], temp_bbox[1], out_label)
 
-		# Check if results path exists. if not, create it
-        fullpath = save_folder+"/{0:}.nii.gz".format(temp_name) # get full path
+        fullpath = save_folder+"/{0:}.nii.gz".format(temp_name)
         basedir = os.path.dirname(fullpath)
-        if not os.path.exists(basedir): # if path doesn't exist
-        	os.makedirs(basedir) # create it
-
-        with open(fullpath, 'a'): # touch the file
-        	os.utime(fullpath, None)
-
+        if not os.path.exists(basedir):
+          os.makedirs(basedir)
+ 
+        with open(fullpath, 'a'):
+          os.utime(fullpath, None)
+          
         save_array_as_nifty_volume(final_label, save_folder+"/{0:}.nii.gz".format(temp_name), img_names[0])
         print(temp_name)
     test_time = np.asarray(test_time)
